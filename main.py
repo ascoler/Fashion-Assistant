@@ -1,6 +1,7 @@
-from fastapi import FastAPI,UploadFile,HTTPException,Depends
-from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer
+from fastapi import FastAPI,UploadFile,HTTPException,Depends,status,Query
+from fastapi.responses import JSONResponse,FileResponse
+import aiofiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel,EmailStr
 from my_best_proj import analyze_image
 import io
@@ -9,6 +10,8 @@ from PIL import Image
 import numpy as np
 from database_structure import User,session
 import auth
+from pathlib import Path
+from typing import Optional
 from mua import complementary_color
 from my_best_proj import (
     load_clothing_model,
@@ -16,10 +19,22 @@ from my_best_proj import (
     get_dominant_colors,
     classify_clothing,
 )
+from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from deep_translator import GoogleTranslator
+from mongo_db_structure import DB,WorkWithDB
+import uuid
+import os
+from bson import ObjectId
+from datetime import datetime
+from fastapi import HTTPException, Depends
+from fastapi.encoders import jsonable_encoder 
+from fastapi import Form, UploadFile, File  
+from typing import List
 app = FastAPI()
+secur = HTTPBearer(auto_error=False)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,6 +55,11 @@ class login_schema(BaseModel):
     password:str
 class weather_for_clothes_schema(BaseModel):
     city:str
+class favorite_brands(BaseModel):
+    brands:str
+class set_favorite(BaseModel):
+    id_post:str
+    
 RECOMMENDATIONS = {
     "Футболка/топ": "Шорты/Брюки/Юбка/Джинсы/Пальто/Кардиган/Жилет/Косуха/Бомбер/Ветровка/Комбинезон",
     "Брюки": "Рубашка/Худи/Футболка/Свитер/Лонгслив/Пальто/Сандали/Кроссовки/Ботинки/Туфли/Мокасины/Блузка/Пиджак",
@@ -102,12 +122,14 @@ def reg(data: Reg_schema):
     try:
         with session as s:
             
-            existing_user = s.query(User).filter(User.name == data.name).one_or_none()
+            existing_user = s.query(User).filter((User.name == data.name) | (User.email == data.email)).first()
             if existing_user:
                 return JSONResponse(
                     status_code=400,
                     content={"message": "This nickname is already taken, think of another one"}
                 )
+            
+
             
            
             hashed_password = bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()).decode()
@@ -121,7 +143,7 @@ def reg(data: Reg_schema):
             
             
             jwt_payload = {
-                "sub": new_user.id,  #
+                "sub": str(new_user.id),  
                 "username": new_user.name,
             }
             token = auth.encode_jwt(payload=jwt_payload)
@@ -153,7 +175,7 @@ def login(data: login_schema) :
             if not bcrypt.checkpw(data.password.encode(), result.password.encode()):
                 raise HTTPException(status_code=401, detail="Incorrect password")
             jwt_payload = {
-                "sub":result.id,
+                "sub":str(result.id),
                 "username": result.name,
                 
             }
@@ -204,3 +226,225 @@ def clothes_for_weather(data: weather_for_clothes_schema):
     } 
     
     return weather_info
+async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(secur)):
+    token = credentials.credentials
+    try:
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+            
+        payload = auth.decode_jwt(token)
+        user_id = payload.get("sub")  
+        
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token: no user ID")
+            
+        with session as s:
+            user = s.query(User).get(user_id)  
+            if not user:
+                raise HTTPException(status_code=404, detail="Account not found")
+                
+        return payload
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+
+@app.get("/home/me")
+def me(token:str =  Depends(verify_user)):
+    nickname = token["username"],
+    ids = token.get("sub")
+    return{
+        "nicname":nickname,
+        "id":ids,
+        
+    }
+
+
+
+
+UPLOAD_DIR = "/home/fedor-pomidor/my_proj/upload"  
+
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)  
+
+@app.post("/home/recomendation/append", status_code=status.HTTP_201_CREATED)
+async def create_post(
+    file: UploadFile,
+    tags: List[str] = Form(...),
+    description: str = Form(...),
+    token: str = Depends(verify_user)
+):
+    try:
+        
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Можно загружать только изображения!"
+            )
+
+        
+        file_extension = Path(file.filename).suffix if file.filename else ".jpg"
+        unique_filename = f"{uuid.uuid4().hex}{file_extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+        
+        async with aiofiles.open(file_path, "wb") as buffer:
+            while chunk := await file.read(1024 * 1024):
+                await buffer.write(chunk)
+
+        
+        user_id = token["sub"]
+        
+        
+        upload_record = WorkWithDB()
+        resu = upload_record.set_photo(
+            file_name=unique_filename,
+            path=file_path,
+            user_id=user_id,
+            tags=tags,
+            description=description
+        )
+        upload_record.insert_in_db()
+
+        
+        with session as s:
+            user = s.query(User).get(user_id)
+            if user:
+                if user.posts_id:
+                    user.posts_id += f",{unique_filename}"
+                else:
+                    user.posts_id = unique_filename
+                s.commit()
+            else:
+                return JSONResponse(
+                    status_code=404,
+                    content={"error": "account not found"}
+                )
+        
+        return {
+            "status": "success",
+            "filename": unique_filename,
+            "path": file_path,
+            "user_id": user_id,
+            "tags": tags,
+            "description": description
+        }
+
+    except Exception as e:
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при загрузке файла: {str(e)}"
+        )
+@app.get("/home/recomendation")
+def get_recomendation(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    limit: int = Query(10, ge=1, le=100, description="Количество элементов на странице")
+):
+    try:
+        db = WorkWithDB()
+        
+        
+        skip = (page - 1) * limit
+        
+        
+        photos = list(db.collection.find().skip(skip).limit(limit))
+        
+        
+        total = db.collection.count_documents({})
+        
+       
+        for photo in photos:
+            photo["_id"] = str(photo["_id"])
+            photo.pop("_sa_instance_state", None)
+        
+        
+        return {
+            "photos": photos,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit  
+            }
+        }
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при получении фото: {str(e)}"
+        )
+@app.post("/home/recomndation/set_favorite")
+async def post_like(data: set_favorite, payload=Depends(verify_user)):
+    db = DB()
+    try:
+        result = db.collection.find_one({"_id": data.id_post})
+        
+
+        sub = payload.get("sub")
+        with session as s:
+            user = s.query(User).get(sub)
+            if not user:
+                return {"error": "account not found"}
+
+            
+            if user.favorite_posts is None:
+                user.favorite_posts = ""
+
+            
+            current_favorites = user.favorite_posts.split(",") if user.favorite_posts else []
+
+            
+            if str(data.id_post) in current_favorites:
+                return {"error": "Пост уже в избранном"}
+
+            
+            updated_favorites = ",".join(current_favorites + [str(data.id_post)])
+            user.favorite_posts = updated_favorites.strip(",")
+            s.commit()
+
+            return {"success": True, "message": "Пост добавлен в избранное"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка: {str(e)}")
+@app.get("/uploads/{filename}")
+async def get_uploaded_file(filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path)
+@app.get("/home/me/favorite-post")
+def Get_Favorite(payload=Depends(verify_user)):
+    try:
+        sub = payload.get("sub")
+        with session as s:
+            user = s.query(User).get(sub)
+            if not user:
+                return {"error": "account not found"}
+            
+            db = WorkWithDB()
+            my_favorite = user.favorite_posts.split(",")
+            my_photos = []
+            
+            for i in my_favorite:
+                i = i.strip()
+                print(f"Searching for _id: '{i}'")
+                
+                try:
+                    photo = db.collection.find_one({"_id": ObjectId(i)})
+                    if photo:
+                        
+                        photo["_id"] = str(photo["_id"])  # ObjectId -> строка
+                        if "data" in photo and isinstance(photo["data"], datetime):
+                            photo["data"] = photo["data"].isoformat()  # datetime -> строка
+                        my_photos.append(photo)
+                except Exception as e:
+                    print(f"Error processing photo {i}: {e}")
+                    continue
+            
+            
+            return jsonable_encoder(my_photos if my_photos else {"error": "No favorites found"})
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении фото: {str(e)}")
+        
