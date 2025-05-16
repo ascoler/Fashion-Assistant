@@ -59,6 +59,8 @@ class favorite_brands(BaseModel):
     brands:str
 class set_favorite(BaseModel):
     id_post:str
+class delete_favorite_Schema(BaseModel):
+    id_post:str
     
 RECOMMENDATIONS = {
     "Футболка/топ": "Шорты/Брюки/Юбка/Джинсы/Пальто/Кардиган/Жилет/Косуха/Бомбер/Ветровка/Комбинезон",
@@ -248,14 +250,9 @@ async def verify_user(credentials: HTTPAuthorizationCredentials = Depends(secur)
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 @app.get("/home/me")
-def me(token:str =  Depends(verify_user)):
-    nickname = token["username"],
-    ids = token.get("sub")
-    return{
-        "nicname":nickname,
-        "id":ids,
-        
-    }
+def me(payload:str =  Depends(verify_user)):
+    None
+    
 
 
 
@@ -434,9 +431,9 @@ def Get_Favorite(payload=Depends(verify_user)):
                     photo = db.collection.find_one({"_id": ObjectId(i)})
                     if photo:
                         
-                        photo["_id"] = str(photo["_id"])  # ObjectId -> строка
+                        photo["_id"] = str(photo["_id"])  
                         if "data" in photo and isinstance(photo["data"], datetime):
-                            photo["data"] = photo["data"].isoformat()  # datetime -> строка
+                            photo["data"] = photo["data"].isoformat()  
                         my_photos.append(photo)
                 except Exception as e:
                     print(f"Error processing photo {i}: {e}")
@@ -448,3 +445,22 @@ def Get_Favorite(payload=Depends(verify_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при получении фото: {str(e)}")
         
+@app.delete("/home/me/favorite-post-delete")
+def delete_favorite(data:delete_favorite_Schema,payload = Depends(verify_user)):
+    try:
+        sub = payload.get("sub")
+        with session as s:
+            user = s.query(User).get(sub)
+            if not user:
+                raise HTTPException(status_code=404, detail=f"Аккаунта не существует")
+            elif not user.favorite_posts or not user.favorite_posts.strip():
+                raise HTTPException(status_code=404, detail=f"У вас нет избранных постов")
+            new_favorite = user.favorite_posts.split(',')
+            new_favorite.remove(data.id_post)
+            user.favorite_posts = ','.join(new_favorite)
+            s.commit()
+       
+            return{"message":"succsess"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Не удалось убрать из избранного: {str(e)}")

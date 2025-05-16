@@ -476,6 +476,7 @@
     </style>
 </head>
 <body>
+    
     <div class="app">
         <!-- Шапка с информацией о пользователе -->
         <div class="header hidden" id="user-header">
@@ -648,7 +649,41 @@
                 hideUserInfo();
                 return false;
             }
-            
+            async function removeFromFavorites(postId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+            showAlert('Для изменения избранного необходимо войти', 'error');
+            return;
+        }
+        
+        const response = await fetch('http://localhost:8000/home/me/favorite-post-delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${token}'
+            },
+            body: JSON.stringify({
+                id_post: postId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        
+        const data = await response.json();
+        showAlert('Удалено из избранного', 'success');
+        
+        // Обновляем список избранного
+        loadFavorites();
+        
+    } catch (error) {
+        console.error('Ошибка удаления из избранного:', error);
+        showAlert(error.message, 'error');
+    }
+}
             function showUserInfo(username) {
                 userHeader.classList.remove('hidden');
                 usernameDisplay.textContent = username;
@@ -1180,7 +1215,7 @@
                     fileInput.value = '';
                     tagsInput.value = '';
                     descriptionInput.value = '';
-                    
+                    ц
                     // Reload recommendations
                     loadRecommendations();
                     
