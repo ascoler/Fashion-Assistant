@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Assistant</title>
+    <style>
+        /* Общие стили */
+        * {
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url("/home/fedor-pomidor/my proj/images.jpg");
+            color: #333;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+        
+        .app {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Шапка с пользователем */
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background-color: #6c5ce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: white;
+        }
+        
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #ff4757;
+            cursor: pointer;
+            font-size: 20px;
+            margin-left: 10px;
+            max-width: 50px;
+            margin-bottom: 10px;
+        }
+        
+        /* Навигация */
+        .navbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            padding: 12px 20px;
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .nav-btn:hover {
+            background: #5649c0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .nav-btn.active {
+            background: #4a3f9e;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset;
+        }
+        
+        .nav-btn.hidden {
+            display: none;
+        }
+        
+        /* Страницы */
+        .page {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        h2 {
+            color: #6c5ce7;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        /* Формы */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+        
+        button {
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #5649c0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        /* Результаты */
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #6c5ce7;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .color-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .color-box:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .color-box::after {
+            content: attr(data-color);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 10px;
+            padding: 2px;
+            text-align: center;
+        }
+        
+        .recommendations {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 8px;
+        }
+        
+        /* Загрузчик */
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6c5ce7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Уведомления */
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .alert.success {
+            background-color: #2ed573;
+        }
+        
+        .alert.error {
+            background-color: #ff4757;
+        }
+        
+        .alert.info {
+            background-color: #1e90ff;
+        }
+
+        /* Рекомендации */
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .recommendation-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .recommendation-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+
+        .recommendation-content {
+            padding: 15px;
+        }
+
+        .recommendation-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .tags-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .tag {
+            background: #e0e0ff;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #6c5ce7;
+        }
+
+        .recommendation-date {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .favorite-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .favorite-btn:hover {
+            background: #e84141;
+            transform: translateY(-2px);
+        }
+
+        .favorite-btn.favorited {
+            background: #6c5ce7;
+        }
+
+        /* Стили для погодных рекомендаций */
+        .weather-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .weather-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .weather-temp {
+            text-align: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            min-width: 120px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .temp-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6c5ce7;
+            display: block;
+        }
+
+        .weather-condition {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .weather-recommendations {
+            flex-grow: 1;
+        }
+
+        .weather-recommendations h4 {
+            margin-top: 0;
+            color: #6c5ce7;
+        }
+
+        /* Пагинация */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .page-btn:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            display: flex;
+            align-items: center;
+            color: #666;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+            }
+            
+            .app {
+                padding: 10px;
+            }
+            
+            .page {
+                padding: 20px;
+            }
+
+            .weather-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="app">
+        <!-- Шапка с информацией о пользователе -->
+        <div class="header hidden" id="user-header">
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <span class="user-name" id="username-display"></span>
+                <button class="logout-btn" id="logout-btn" title="Выйти">×</button>
+            </div>
+        </div>
+
+        <nav class="navbar">
+            <button class="nav-btn active" data-page="upload">Анализ одежды</button>
+            <button class="nav-btn" data-page="login" id="login-nav-btn">Вход</button>
+            <button class="nav-btn" data-page="register" id="register-nav-btn">Регистрация</button>
+            <button class="nav-btn" data-page="weather" id="weather-nav-btn">Погода</button>
+            <button class="nav-btn hidden" data-page="recommendations" id="recommendations-nav-btn">Рекомендации</button>
+            <button class="nav-btn hidden" data-page="add-recommendation" id="add-recommendation-nav-btn">Выложить пост</button>
+            <button class="nav-btn hidden" data-page="favorites" id="favorites-nav-btn">Избранное</button>
+        </nav>
+
+        <!-- Страница анализа -->
+        <div class="page" id="upload-page">
+            <h1>Fashion Assistant</h1>
+            <h2>Анализ одежды</h2>
+            <div class="form-group">
+                <label for="file-input">Выберите фото одежды:</label>
+                <input type="file" id="file-input" accept="image/*">
+            </div>
+            <button id="analyze-btn">Анализировать</button>
+        
+            <div class="loader" id="loader">
+                <div class="loader-spinner"></div>
+                <p>Анализируем изображение...</p>
+            </div>
+            
+            <div class="result hidden" id="result-container"></div>
+        </div>
+
+        <!-- Страница входа -->
+        <div class="page hidden" id="login-page">
+            <h1>Fashion Assistant</h1>
+            <h2>Вход в систему</h2>
+            <div class="form-group">
+                <label for="login-username">Имя пользователя:</label>
+                <input type="text" id="login-username" placeholder="Введите ваш логин">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Пароль:</label>
+                <input type="password" id="login-password" placeholder="Введите пароль">
+            </div>
+            <button id="login-btn">Войти</button>
+        </div>
+
+        <!-- Страница рекомендаций по погоде -->
+        <div class="page hidden" id="weather-page">
+            <h2>Рекомендации по погоде</h2>
+            <div class="form-group">
+                <label for="city-input">Город:</label>
+                <input type="text" id="city-input" placeholder="Введите город">
+            </div>
+            <button id="get-weather-btn">Получить рекомендации</button>
+            
+            <div class="loader" id="weather-loader">
+                <div class="loader-spinner"></div>
+                <p>Получаем данные о погоде...</p>
+            </div>
+            
+            <div class="result hidden" id="weather-result"></div>
+        </div>
+
+        <!-- Страница регистрации -->
+        <div class="page hidden" id="register-page">
+            <h1>Fashion Assistant</h1>
+            <h2>Регистрация</h2>
+            <div class="form-group">
+                <label for="reg-username">Имя пользователя:</label>
+                <input type="text" id="reg-username" placeholder="Придумайте логин">
+            </div>
+            <div class="form-group">
+                <label for="reg-email">Email:</label>
+                <input type="email" id="reg-email" placeholder="Введите ваш email">
+            </div>
+            <div class="form-group">
+                <label for="reg-password">Пароль:</label>
+                <input type="password" id="reg-password" placeholder="Придумайте пароль">
+            </div>
+            <button id="register-btn">Зарегистрироваться</button>
+        </div>
+
+        <!-- Страница рекомендаций -->
+        <div class="page hidden" id="recommendations-page">
+            <h2>Рекомендации</h2>
+            <div class="loader" id="recommendations-loader">
+                <div class="loader-spinner"></div>
+                <p>Загружаем рекомендации...</p>
+            </div>
+            <div class="recommendations-grid" id="recommendations-container"></div>
+            <div class="pagination hidden" id="recommendations-pagination">
+                <button class="page-btn" id="prev-page-btn">Назад</button>
+                <span class="page-info" id="page-info">Страница 1 из 1</span>
+                <button class="page-btn" id="next-page-btn">Вперед</button>
+            </div>
+        </div>
+
+        <!-- Страница добавления рекомендации -->
+        <div class="page hidden" id="add-recommendation-page">
+            <h2>Добавить рекомендацию</h2>
+            <div class="form-group">
+                <label for="recommendation-file">Изображение:</label>
+                <input type="file" id="recommendation-file" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label for="recommendation-tags">Теги (через запятую):</label>
+                <input type="text" id="recommendation-tags" placeholder="Например: лето, повседневный, женский">
+            </div>
+            <div class="form-group">
+                <label for="recommendation-description">Описание:</label>
+                <textarea id="recommendation-description" rows="4" placeholder="Опишите ваш образ..."></textarea>
+            </div>
+            <button id="add-recommendation-btn">Добавить рекомендацию</button>
+            
+            <div class="loader" id="add-recommendation-loader">
+                <div class="loader-spinner"></div>
+                <p>Загружаем вашу рекомендацию...</p>
+            </div>
+        </div>
+
+        <!-- Страница избранного -->
+        <div class="page hidden" id="favorites-page">
+            <h2>Избранное</h2>
+            <div class="loader" id="favorites-loader">
+                <div class="loader-spinner"></div>
+                <p>Загружаем избранное...</p>
+            </div>
+            <div class="recommendations-grid" id="favorites-container"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const userHeader = document.getElementById('user-header');
+            const usernameDisplay = document.getElementById('username-display');
+            const userAvatar = document.getElementById('user-avatar');
+            const logoutBtn = document.getElementById('logout-btn');
+            const loginNavBtn = document.getElementById('login-nav-btn');
+            const registerNavBtn = document.getElementById('register-nav-btn');
+            const recommendationsNavBtn = document.getElementById('recommendations-nav-btn');
+            const addRecommendationNavBtn = document.getElementById('add-recommendation-nav-btn');
+            const favoritesNavBtn = document.getElementById('favorites-nav-btn');
+
+            // Pagination
+            let currentPage = 1;
+            const prevPageBtn = document.getElementById('prev-page-btn');
+            const nextPageBtn = document.getElementById('next-page-btn');
+            const pageInfo = document.getElementById('page-info');
+            
+            // Check auth on load
+            checkAuth();
+            
+            // Auth functions
+            function checkAuth() {
+                const token = localStorage.getItem('authToken');
+                const username = localStorage.getItem('username');
+                
+                if (token && username) {
+                    showUserInfo(username);
+                    return true;
+                }
+                hideUserInfo();
+                return false;
+            }
+            async function removeFromFavorites(postId) {
+    try {
+        const token = localStorage.getItem('authToken');
+        
+        if (!token) {
+            showAlert('Для изменения избранного необходимо войти', 'error');
+            return;
+        }
+        
+        const response = await fetch('http://localhost:8000/home/me/favorite-post-delete', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${token}'
+            },
+            body: JSON.stringify({
+                id_post: postId
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        
+        const data = await response.json();
+        showAlert('Удалено из избранного', 'success');
+        
+        // Обновляем список избранного
+        loadFavorites();
+        
+    } catch (error) {
+        console.error('Ошибка удаления из избранного:', error);
+        showAlert(error.message, 'error');
+    }
+}
+            function showUserInfo(username) {
+                userHeader.classList.remove('hidden');
+                usernameDisplay.textContent = username;
+                userAvatar.textContent = username.charAt(0).toUpperCase();
+                loginNavBtn.classList.add('hidden');
+                registerNavBtn.classList.add('hidden');
+                recommendationsNavBtn.classList.remove('hidden');
+                addRecommendationNavBtn.classList.remove('hidden');
+                favoritesNavBtn.classList.remove('hidden');
+            }
+            
+            function hideUserInfo() {
+                userHeader.classList.add('hidden');
+                loginNavBtn.classList.remove('hidden');
+                registerNavBtn.classList.remove('hidden');
+                recommendationsNavBtn.classList.add('hidden');
+                addRecommendationNavBtn.classList.add('hidden');
+                favoritesNavBtn.classList.add('hidden');
+            }
+            
+            // Logout
+            logoutBtn.addEventListener('click', function() {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('username');
+                hideUserInfo();
+                showAlert('Вы вышли из системы', 'info');
+                document.querySelector('[data-page="login"]').click();
+            });
+            
+            // Navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const pageId = this.getAttribute('data-page');
+                    
+                    document.querySelectorAll('.page').forEach(page => {
+                        page.classList.add('hidden');
+                    });
+                    
+                    document.getElementById(`${pageId}-page`).classList.remove('hidden');
+                    
+                    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    if (pageId === 'recommendations') {
+                        loadRecommendations();
+                    } else if (pageId === 'favorites') {
+                        loadFavorites();
+                    }
+                });
+            });
+
+            // Pagination controls
+            prevPageBtn.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadRecommendations();
+                }
+            });
+
+            nextPageBtn.addEventListener('click', function() {
+                currentPage++;
+                loadRecommendations();
+            });
+            
+            // File upload and analysis
+            document.getElementById('analyze-btn').addEventListener('click', async function() {
+                const fileInput = document.getElementById('file-input');
+                
+                if (!fileInput.files.length) {
+                    showAlert('Пожалуйста, выберите файл', 'error');
+                    return;
+                }
+                
+                document.getElementById('loader').style.display = 'block';
+                document.getElementById('result-container').classList.add('hidden');
+                
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                try {
+                    const token = localStorage.getItem('authToken');
+                    const headers = {};
+                    
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    
+                    const response = await fetch('http://localhost:8000/home/send_photo', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    showResults(data);
+                    
+                } catch (error) {
+                    showAlert(`Ошибка: ${error.message}`, 'error');
+                    console.error('Error:', error);
+                } finally {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            });
+            
+            function showResults(data) {
+                const processColor = (color) => {
+                    if (color.startsWith('#')) return color;
+                    if (color.startsWith('[')) {
+                        const rgb = color.replace(/[\[\]]/g, '').split(',').map(Number);
+                        return `#${rgb[0].toString(16).padStart(2, '0')}${rgb[1].toString(16).padStart(2, '0')}${rgb[2].toString(16).padStart(2, '0')}`;
+                    }
+                    return '#000000';
+                };
+
+                let colorsHtml = '';
+                if (Array.isArray(data.colors)) {
+                    data.colors.forEach((color) => {
+                        const hexColor = processColor(color);
+                        colorsHtml += `<div class="color-box" style="background-color: ${hexColor}" data-color="${hexColor}"></div>`;
+                    });
+                }
+
+                let complementaryHtml = '';
+                if (Array.isArray(data.complementary_colors)) {
+                    data.complementary_colors.forEach((color) => {
+                        const hexColor = processColor(color);
+                        complementaryHtml += `<div class="color-box" style="background-color: ${hexColor}" data-color="${hexColor}"></div>`;
+                    });
+                }
+
+                const resultContainer = document.getElementById('result-container');
+                const userInfo = data.user ? `<p><strong>Пользователь:</strong> ${data.user}</p>` : '';
+                
+                resultContainer.innerHTML = `
+                    <h3>Результаты анализа</h3>
+                    ${userInfo}
+                    <p><strong>Тип одежды:</strong> ${data.clothing_type}</p>
+                    
+                    <h4>Основные цвета:</h4>
+                    <div class="color-palette">${colorsHtml}</div>
+                    
+                    <h4>Рекомендации по сочетанию:</h4>
+                    <div class="recommendations">
+                        ${data.recommendations.split('/').map(item => `• ${item.trim()}`).join('<br>')}
+                    </div>
+                    
+                    <h4>Рекомендации по цветам:</h4>
+                    <div class="color-palette">
+                        ${complementaryHtml}
+                    </div>
+                `;
+                
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            // Registration
+            document.getElementById('register-btn').addEventListener('click', async function() {
+                const username = document.getElementById('reg-username').value.trim();
+                const password = document.getElementById('reg-password').value.trim();
+                const email = document.getElementById('reg-email').value.trim();
+                
+                if (!username || !password || !email) {
+                    showAlert('Все поля обязательны для заполнения', 'error');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('http://localhost:8000/home/reg', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: username,
+                            password: password,
+                            email: email
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        const errorMessage = data.message || 'Ошибка регистрации';
+                        showAlert(errorMessage, 'error');
+                        return;
+                    }
+                    
+                    if (data.token) {
+                        localStorage.setItem('authToken', data.token);
+                        localStorage.setItem('username', username);
+                        showUserInfo(username);
+                        showAlert('Регистрация прошла успешно!', 'success');
+                        document.querySelector('[data-page="upload"]').click();
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка при регистрации:', error);
+                    showAlert('Произошла ошибка при соединении с сервером', 'error');
+                }
+            });
+            
+            // Login
+            document.getElementById('login-btn').addEventListener('click', async function() {
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value.trim();
+                
+                if (!username || !password) {
+                    showAlert('Введите логин и пароль', 'error');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('http://localhost:8000/home/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: username,
+                            password: password
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('username', username);
+                    
+                    showUserInfo(username);
+                    showAlert('Вы успешно вошли!', 'success');
+                    document.querySelector('[data-page="upload"]').click();
+                    
+                } catch (error) {
+                    showAlert('Ошибка входа: ' + error.message, 'error');
+                }
+            });
+            
+            // Weather recommendations
+            document.getElementById('get-weather-btn').addEventListener('click', async function() {
+                const city = document.getElementById('city-input').value.trim();
+                const loader = document.getElementById('weather-loader');
+                const resultContainer = document.getElementById('weather-result');
+                
+                if (!city) {
+                    showAlert('Введите город', 'error');
+                    return;
+                }
+                
+                try {
+                    loader.style.display = 'block';
+                    resultContainer.classList.add('hidden');
+                    
+                    const response = await fetch('http://localhost:8000/home/weather&clothes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            city: city
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    
+                    resultContainer.innerHTML = `
+                        <div class="weather-card">
+                            <h3>Рекомендации для города ${data.city}:</h3>
+                            <div class="weather-info">
+                                <div class="weather-temp">
+                                    <span class="temp-value">${data.temperature_c}°C</span>
+                                    <span class="weather-condition">${data.weather_condition}</span>
+                                </div>
+                                <div class="weather-recommendations">
+                                    <h4>Рекомендации по одежде:</h4>
+                                    <p>${data.clothes_recommendation}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    resultContainer.classList.remove('hidden');
+                    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                } catch (error) {
+                    console.error('Ошибка получения рекомендаций:', error);
+                    showAlert(`Не удалось получить рекомендации: ${error.message}`, 'error');
+                } finally {
+                    loader.style.display = 'none';
+                }
+            });
+            
+            // Load recommendations
+            async function loadRecommendations() {
+                const loader = document.getElementById('recommendations-loader');
+                const container = document.getElementById('recommendations-container');
+                const pagination = document.getElementById('recommendations-pagination');
+                
+                try {
+                    loader.style.display = 'block';
+                    container.innerHTML = '';
+                    
+                    const response = await fetch(`http://localhost:8000/home/recomendation?page=${currentPage}&limit=10`);
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Update pagination controls
+                    const totalPages = Math.ceil(data.pagination.total / data.pagination.limit);
+                    pageInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+                    prevPageBtn.disabled = currentPage <= 1;
+                    nextPageBtn.disabled = currentPage >= totalPages;
+                    pagination.classList.remove('hidden');
+                    
+                    if (data.photos && data.photos.length > 0) {
+                        data.photos.forEach(photo => {
+                            if (!photo.file_name) return;
+                            
+                            const card = document.createElement('div');
+                            card.className = 'recommendation-card';
+                            
+                            const imageUrl = `http://localhost:8000/uploads/${photo.file_name}`;
+                            
+                            card.innerHTML = `
+                                <img src="${imageUrl}" alt="Рекомендация" class="recommendation-img"
+                                     onerror="this.src='https://via.placeholder.com/300?text=Image+not+found'">
+                                <div class="recommendation-content">
+                                    <h3 class="recommendation-title">${photo.description || 'Без описания'}</h3>
+                                    <div class="tags-container">
+                                        ${(photo.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                    </div>
+                                    <p class="recommendation-date">${new Date(photo.data).toLocaleDateString()}</p>
+                                    <button class="favorite-btn" data-id="${photo._id}">❤️ Добавить в избранное</button>
+                                </div>
+                            `;
+                            
+                            container.appendChild(card);
+                        });
+
+                        // Add event listeners to favorite buttons
+                        document.querySelectorAll('.favorite-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const postId = this.getAttribute('data-id');
+                                addToFavorites(postId);
+                            });
+                        });
+                    } else {
+                        container.innerHTML = '<p style="text-align: center; color: #666;">Пока нет рекомендаций</p>';
+                        pagination.classList.add('hidden');
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки рекомендаций:', error);
+                    showAlert('Не удалось загрузить рекомендации', 'error');
+                    pagination.classList.add('hidden');
+                } finally {
+                    loader.style.display = 'none';
+                }
+            }
+            
+            // Load favorites
+            async function loadFavorites() {
+                const loader = document.getElementById('favorites-loader');
+                const container = document.getElementById('favorites-container');
+                
+                try {
+                    loader.style.display = 'block';
+                    container.innerHTML = '';
+                    
+                    const token = localStorage.getItem('authToken');
+                    
+                    if (!token) {
+                        showAlert('Для просмотра избранного необходимо войти', 'error');
+                        return;
+                    }
+                    
+                    const response = await fetch('http://localhost:8000/home/me/favorite-post', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(photo => {
+                            if (!photo.file_name) return;
+                            
+                            const card = document.createElement('div');
+                            card.className = 'recommendation-card';
+                            
+                            const imageUrl = `http://localhost:8000/uploads/${photo.file_name}`;
+                            
+                            card.innerHTML = `
+                                <img src="${imageUrl}" alt="Избранное" class="recommendation-img"
+                                     onerror="this.src='https://via.placeholder.com/300?text=Image+not+found'">
+                                <div class="recommendation-content">
+                                    <h3 class="recommendation-title">${photo.description || 'Без описания'}</h3>
+                                    <div class="tags-container">
+                                        ${(photo.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                    </div>
+                                    <p class="recommendation-date">${new Date(photo.data).toLocaleDateString()}</p>
+                                    <button class="favorite-btn favorited" data-id="${photo._id}">❤️ В избранном</button>
+                                </div>
+                            `;
+                            
+                            container.appendChild(card);
+                        });
+                    } else {
+                        container.innerHTML = '<p style="text-align: center; color: #666;">У вас пока нет избранных рекомендаций</p>';
+                    }
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки избранного:', error);
+                    showAlert('Не удалось загрузить избранное', 'error');
+                } finally {
+                    loader.style.display = 'none';
+                }
+            }
+            
+            // Add to favorites
+            async function addToFavorites(postId) {
+                try {
+                    const token = localStorage.getItem('authToken');
+                    
+                    if (!token) {
+                        showAlert('Для добавления в избранное необходимо войти', 'error');
+                        return;
+                    }
+                    
+                    const response = await fetch('http://localhost:8000/home/recomndation/set_favorite', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            id_post: postId
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    showAlert(data.message || 'Добавлено в избранное', 'success');
+                    
+                    // Update button state
+                    document.querySelectorAll(`.favorite-btn[data-id="${postId}"]`).forEach(btn => {
+                        btn.textContent = '❤️ В избранном';
+                        btn.classList.add('favorited');
+                    });
+                    
+                } catch (error) {
+                    console.error('Ошибка добавления в избранное:', error);
+                    showAlert(error.message, 'error');
+                }
+            }
+            
+            // Add recommendation
+            document.getElementById('add-recommendation-btn').addEventListener('click', async function() {
+                const fileInput = document.getElementById('recommendation-file');
+                const tagsInput = document.getElementById('recommendation-tags');
+                const descriptionInput = document.getElementById('recommendation-description');
+                const loader = document.getElementById('add-recommendation-loader');
+                
+                if (!fileInput.files.length) {
+                    showAlert('Выберите изображение', 'error');
+                    return;
+                }
+                
+                if (!descriptionInput.value.trim()) {
+                    showAlert('Введите описание', 'error');
+                    return;
+                }
+                
+                const token = localStorage.getItem('authToken');
+                
+                if (!token) {
+                    showAlert('Для добавления рекомендации необходимо войти', 'error');
+                    return;
+                }
+                
+                try {
+                    loader.style.display = 'block';
+                    
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    formData.append('description', descriptionInput.value.trim());
+                    
+                    const tags = tagsInput.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    tags.forEach(tag => formData.append('tags', tag));
+                    
+                    const response = await fetch('http://localhost:8000/home/recomendation/append', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const data = await response.json();
+                    showAlert('Рекомендация успешно добавлена!', 'success');
+                    
+                    // Clear form
+                    fileInput.value = '';
+                    tagsInput.value = '';
+                    descriptionInput.value = '';
+                    ц
+                    // Reload recommendations
+                    loadRecommendations();
+                    
+                } catch (error) {
+                    console.error('Ошибка добавления рекомендации:', error);
+                    showAlert(error.message, 'error');
+                } finally {
+                    loader.style.display = 'none';
+                }
+            });
+            
+            // Alert function
+            function showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert ${type}`;
+                alertDiv.textContent = message;
+                
+                document.body.appendChild(alertDiv);
+                
+                setTimeout(() => {
+                    alertDiv.style.opacity = '0';
+                    setTimeout(() => alertDiv.remove(), 300);
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
